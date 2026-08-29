@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>zwiftbridge</title>
+<link rel="icon" type="image/png" sizes="256x256" href="/icon.png">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.png">
+<style>
+  :root {
+    --bg: #f2f3f5; --card: #fff; --ink: #16181c; --muted: #6a7280;
+    --line: #dcdfe4; --line-soft: #e9ebee;
+    --accent: #f26522; --accent-ink: #fff; --accent-soft: #fdf0e8;
+    --ok: #1a8a4a; --warn: #b26a00; --err: #c62828;
+    --r: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417; --card: #1a1d21; --ink: #e6e8ea; --muted: #949aa3;
+      --line: #2b2f35; --line-soft: #23262b;
+      --accent: #f26522; --accent-ink: #fff; --accent-soft: #2a1a11;
+      --ok: #3fbf74; --warn: #e0a33c; --err: #ef5350;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding: 0 0 48px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+
+  /* --- top bar ---------------------------------------------------------- */
+  .bar {
+    position: sticky; top: 0; z-index: 20; background: var(--card);
+    border-bottom: 1px solid var(--line); margin-bottom: 24px;
+  }
+  .bar-in {
+    max-width: 880px; margin: 0 auto; padding: 12px 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo {
+    font-size: 16px; font-weight: 700; letter-spacing: -0.2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo i { font-style: normal; color: var(--accent); }
+  .logo .mark { width: 22px; height: 22px; display: block; flex: none; }
+  .status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.on { background: var(--ok); }
+  .dot.busy { background: var(--warn); animation: pulse 1.1s ease-in-out infinite; }
+  .dot.off { background: var(--muted); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .grow { flex: 1; }
+  button {
+    font: inherit; font-weight: 600; padding: 7px 14px; border-radius: var(--r);
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--line-soft); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.go { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.go:hover:not(:disabled) { filter: brightness(1.07); background: var(--accent); }
+  .batt { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* --- sections --------------------------------------------------------- */
+  section { margin-bottom: 28px; }
+  h2 { font-size: 13px; font-weight: 700; margin: 0 0 3px; letter-spacing: -0.1px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+
+  /* --- destination picker ---------------------------------------------- */
+  .dests { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 640px) { .dests { grid-template-columns: 1fr; } }
+  .dest {
+    text-align: left; padding: 12px 14px; border: 1px solid var(--line);
+    background: var(--card); border-radius: var(--r); cursor: pointer;
+    display: block; width: 100%; font-weight: 400;
+  }
+  .dest:hover { background: var(--line-soft); }
+  .dest.on { border-color: var(--accent); background: var(--accent-soft); }
+  .dest.on:hover { background: var(--accent-soft); }
+  .dest-top { display: flex; align-items: center; gap: 8px; }
+  .dest b { font-size: 14px; font-weight: 600; }
+  .dest .tick {
+    margin-left: auto; width: 16px; height: 16px; border: 1px solid var(--line);
+    border-radius: 2px; flex: none; position: relative; background: var(--card);
+  }
+  .dest.on .tick { background: var(--accent); border-color: var(--accent); }
+  .dest.on .tick::after {
+    content: ""; position: absolute; left: 5px; top: 1px; width: 4px; height: 9px;
+    border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(43deg);
+  }
+  .dest small { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.45; }
+  .dest .live { font-size: 11px; font-weight: 700; color: var(--ok); text-transform: uppercase; letter-spacing: .04em; }
+  .dest .live.no { color: var(--warn); }
+  .more { margin-top: 10px; }
+  .more summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; padding: 4px 0; }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary::before { content: "+ "; }
+  .more[open] summary::before { content: "\2212  "; }
+  .more[open] summary { margin-bottom: 8px; }
+
+  /* --- controller ------------------------------------------------------- */
+  .halves { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .halves { grid-template-columns: 1fr; } }
+  .half-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--muted); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .key {
+    border: 1px solid var(--line); background: var(--card); border-radius: var(--r);
+    padding: 7px 8px; cursor: pointer; text-align: left; min-height: 54px;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px;
+    font-weight: 400; position: relative; overflow: hidden;
+  }
+  .key:hover { background: var(--line-soft); }
+  .key .kn { font-size: 11px; color: var(--muted); line-height: 1.25; }
+  .key .kv { font-size: 13px; font-weight: 600; line-height: 1.25; }
+  .key.unset .kv { color: var(--muted); font-weight: 400; }
+  .key.g-shifter { background: color-mix(in srgb, var(--accent) 7%, var(--card)); }
+  .key.g-paddle  { background: color-mix(in srgb, var(--ok) 9%, var(--card)); }
+  .key.g-extra   { background: var(--line-soft); }
+  .key.buzz::after {
+    content: ""; position: absolute; top: 6px; right: 6px; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .key.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .key.held { background: var(--accent); border-color: var(--accent); }
+  .key.held .kn, .key.held .kv { color: var(--accent-ink); }
+  .key.held.buzz::after { background: #fff; }
+  .spacer { visibility: hidden; }
+
+  /* --- editor ----------------------------------------------------------- */
+  .editor {
+    margin-top: 14px; border: 1px solid var(--accent); border-radius: var(--r);
+    background: var(--card); padding: 14px 16px;
+  }
+  .editor-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .editor-head b { font-size: 14px; }
+  .editor-head span { color: var(--muted); font-size: 13px; }
+  .editor-head button { margin-left: auto; padding: 4px 10px; font-size: 13px; }
+  .agroup { margin-bottom: 12px; }
+  .agroup h3 {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 0 0 6px;
+  }
+  .achips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--card); border-radius: var(--r);
+    padding: 6px 10px; font-size: 13px; cursor: pointer; font-weight: 400; text-align: left;
+  }
+  .chip:hover { background: var(--line-soft); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .chip.dead { opacity: .45; }
+  .chip small { display: block; font-size: 11px; opacity: .7; }
+  .chip.on small { opacity: .85; }
+  .buzzrow {
+    display: flex; align-items: center; gap: 10px; padding-top: 12px;
+    border-top: 1px solid var(--line-soft); margin-top: 4px;
+  }
+  .buzzrow .txt { flex: 1; }
+  .buzzrow b { font-size: 13px; font-weight: 600; }
+  .buzzrow small { display: block; color: var(--muted); font-size: 12px; }
+  .sw {
+    width: 40px; height: 23px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--line-soft); position: relative; cursor: pointer; flex: none; padding: 0;
+  }
+  .sw::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px;
+    border-radius: 50%; background: var(--card); border: 1px solid var(--line);
+    transition: left .12s ease;
+  }
+  .sw.on { background: var(--accent); border-color: var(--accent); }
+  .sw.on::after { left: 19px; border-color: var(--accent); }
+
+  /* --- misc ------------------------------------------------------------- */
+  .rowbtns { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+  .warnbox {
+    border: 1px solid var(--warn); border-radius: var(--r); padding: 10px 12px;
+    font-size: 13px; margin-top: 12px; color: var(--ink); line-height: 1.5;
+    background: color-mix(in srgb, var(--warn) 8%, var(--card));
+  }
+  .halfnote { font-size: 12.5px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  details.log summary {
+    cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; padding: 4px 0;
+  }
+  details.log summary::-webkit-details-marker { display: none; }
+  details.log summary::before { content: "+ "; }
+  details.log[open] summary::before { content: "\2212  "; }
+  #log {
+    font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+    border: 1px solid var(--line); border-radius: var(--r); padding: 10px;
+    background: var(--card); margin-top: 6px;
+  }
+  #log div { padding: 1px 0; }
+  #log .warning { color: var(--warn); }
+  #log .error { color: var(--err); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="logo">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#f26522"/>
+        <g stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45">
+          <path d="M8 48h48"/><path d="M19 48v8M45 48v8"/>
+        </g>
+        <path d="M39 5 L17 35h12L25 59 47 27H35z" fill="#fff"/>
+      </svg>
+      <span>zwift<i>bridge</i></span>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statustext">Not running</span></div>
+    <div class="grow"></div>
+    <div class="batt" id="batt" hidden></div>
+    <button id="go" class="go">Start</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <h2>Where your buttons go</h2>
+    <p class="sub">Pick where MyWhoosh is running.</p>
+    <div class="dests" id="dests"></div>
+    <details class="more">
+      <summary>Other ways to connect</summary>
+      <div class="dests" id="dests2"></div>
+    </details>
+    <div id="pairhint"></div>
+  </section>
+
+  <section>
+    <h2>Your controller</h2>
+    <p class="sub">Click any button to change what it does.</p>
+    <div class="halves">
+      <div>
+        <div class="half-label"><span class="dot off" id="dot-left"></span>Left</div>
+        <div class="pad" id="pad-left"></div>
+      </div>
+      <div>
+        <div class="half-label"><span class="dot off" id="dot-right"></span>Right</div>
+        <div class="pad" id="pad-right"></div>
+      </div>
+    </div>
+    <div id="editor"></div>
+    <p class="halfnote" id="halfnote" hidden>
+      The Ride is two Bluetooth devices. If one half is missing its buttons do
+      nothing. Press a button on that side to wake it and it joins on its own.
+    </p>
+    <div class="rowbtns">
+      <button id="scan">Scan for controller</button>
+      <button id="reset">Reset all buttons</button>
+    </div>
+  </section>
+
+  <section>
+    <details class="log">
+      <summary>Activity</summary>
+      <div id="log"></div>
+    </details>
+  </section>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+let vocab = null;
+let state = {};
+let selectedButton = null;
+let outputs = new Set();
+
+/* --- destinations ------------------------------------------------------ */
+
+function renderDests() {
+  if (!vocab) return;
+  const live = new Map((state.outputs || []).map((o) => [o.name, o]));
+  const draw = (list) => list.map((o) => {
+    const on = outputs.has(o.id);
+    const l = live.get(o.id);
+    const badge = on && l
+      ? `<span class="live ${l.ready ? "" : "no"}">${l.ready ? "connected" : "waiting"}</span>`
+      : "";
+    return `<button class="dest ${on ? "on" : ""}" data-d="${o.id}">
+      <span class="dest-top"><b>${esc(o.name)}</b>${badge}<span class="tick"></span></span>
+      <small>${esc(o.hint)}</small></button>`;
+  }).join("");
+
+  const primary = (o) => o.recommended || o.id === "keystrokes";
+  $("dests").innerHTML = draw(vocab.outputs.filter(primary));
+  $("dests2").innerHTML = draw(vocab.outputs.filter((o) => !primary(o)));
+
+  mouseOnly($("dests")); mouseOnly($("dests2"));
+  document.querySelectorAll(".dest").forEach((el) => {
+    el.onclick = async () => {
+      const id = el.dataset.d;
+      outputs.has(id) ? outputs.delete(id) : outputs.add(id);
+      if (!outputs.size) { outputs.add(id); return; }   // never leave it empty
+      renderDests();
+      apply(await post("/api/settings", { outputs: [...outputs] }));
+    };
+  });
+
+  // Only speak up when something is genuinely waiting on the rider.
+  const waiting = (state.outputs || []).find((o) => !o.ready);
+  const box = $("pairhint");
+  if (!state.running || !waiting) { box.innerHTML = ""; return; }
+  if (waiting.name === "keystrokes" && /Accessibility/i.test(waiting.status || "")) {
+    box.innerHTML = `<div class="warnbox"><b>One more step.</b> Open System Settings,
+      go to Privacy and Security, then Accessibility, and switch on the app you
+      started this from. Then quit and reopen zwiftbridge.</div>`;
+  } else if (waiting.name.indexOf("dircon") >= 0 || waiting.name === "obp_mdns") {
+    box.innerHTML = `<div class="warnbox"><b>Now pair it in MyWhoosh.</b> Same Wi-Fi,
+      turn Virtual Shifting on, pair your trainer as usual, then look for
+      <b>Zwift Ride (zwiftbridge)</b> in the controller list. It is found over
+      Wi-Fi, so it will never show up in a Bluetooth scan.</div>`;
+  } else if (waiting.name === "whoosh_link") {
+    box.innerHTML = `<div class="warnbox">Waiting for MyWhoosh to call in on port
+      21587. This route needs the MyWhoosh Link companion app to have run once.</div>`;
+  } else {
+    box.innerHTML = "";
+  }
+}
+
+/* --- the controller ---------------------------------------------------- */
+
+function renderPads() {
+  if (!vocab) return;
+  const held = new Set(state.held || []);
+  for (const side of ["left", "right"]) {
+    const keys = vocab.buttons.filter((b) => b.side === side);
+    const rows = Math.max(...keys.map((b) => b.row)) + 1;
+    const cells = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < 3; c++) {
+        const b = keys.find((k) => k.row === r && k.col === c);
+        if (b) { cells.push(b); c += (b.span || 1) - 1; }
+        else cells.push(null);
+      }
+    }
+    $("pad-" + side).innerHTML = cells.map((b) => {
+      if (!b) return `<div class="key spacer"></div>`;
+      const name = state.binding_names ? state.binding_names[b.id] : "";
+      const unset = !name || name === "Do nothing";
+      const cls = ["key", "g-" + b.group];
+      if (held.has(b.id)) cls.push("held");
+      if (state.buzz && state.buzz[b.id]) cls.push("buzz");
+      if (unset) cls.push("unset");
+      if (selectedButton === b.id) cls.push("sel");
+      return `<button class="${cls.join(" ")}" data-b="${b.id}"
+        style="grid-column: span ${b.span || 1}">
+        <span class="kn">${esc(b.name)}</span>
+        <span class="kv">${esc(unset ? "Not used" : name)}</span></button>`;
+    }).join("");
+  }
+  mouseOnly($("pad-left")); mouseOnly($("pad-right"));
+  document.querySelectorAll(".key[data-b]").forEach((el) => {
+    el.onclick = () => {
+      selectedButton = selectedButton === el.dataset.b ? null : el.dataset.b;
+      renderPads(); renderEditor();
+      if (selectedButton) $("editor").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+  });
+}
+
+function renderEditor() {
+  const box = $("editor");
+  if (!selectedButton || !vocab) { box.innerHTML = ""; return; }
+  const b = vocab.buttons.find((x) => x.id === selectedButton);
+  const current = (state.bindings || {})[b.id] || "none";
+  const buzzing = !!(state.buzz || {})[b.id];
+  const isHeld = (vocab.held_buttons || []).includes(b.id);
+
+  // Grey out anything the chosen destinations cannot actually deliver.
+  const reachable = new Set();
+  let anyConsole = false;
+  for (const o of outputs) {
+    if (o === "console") { anyConsole = true; continue; }
+    const list = o === "keystrokes" ? vocab.keystroke_actions : vocab.network_actions;
+    list.forEach((a) => reachable.add(a));
+  }
+  const canDo = (id) => anyConsole || id === "none" || reachable.has(id.split(":")[0]);
+
+  box.innerHTML = `<div class="editor">
+    <div class="editor-head">
+      <b>${esc(b.name)}</b><span>What should this do?</span>
+      <button id="closeed">Done</button>
+    </div>
+    ${vocab.action_groups.map((g) => `
+      <div class="agroup"><h3>${esc(g.name)}</h3><div class="achips">
+      ${g.actions.map((a) => `<button class="chip ${current === a.id ? "on" : ""} ${canDo(a.id) ? "" : "dead"}"
+        data-a="${a.id}" title="${canDo(a.id) ? "" : "Your chosen destination cannot send this"}">
+        ${esc(a.name)}${a.hint ? `<small>${esc(a.hint)}</small>` : ""}</button>`).join("")}
+      </div></div>`).join("")}
+    <div class="buzzrow">
+      <div class="txt"><b>Buzz when pressed</b>
+      <small>${isHeld
+        ? "This one is squeezed and held, so a buzz would repeat. Best left off."
+        : "A short tick in your hand so you feel it without looking down."}</small></div>
+      <button class="sw ${buzzing ? "on" : ""}" id="buzzsw"></button>
+    </div>
+  </div>`;
+
+  $("closeed").onclick = () => { selectedButton = null; renderPads(); renderEditor(); };
+  mouseOnly(box);
+  box.querySelectorAll(".chip").forEach((el) => {
+    el.onclick = async () => {
+      apply(await post("/api/settings", { bindings: { [b.id]: el.dataset.a } }));
+    };
+  });
+  $("buzzsw").onclick = async () => {
+    apply(await post("/api/settings", { vibrate_buttons: { [b.id]: !buzzing } }));
+  };
+}
+
+/* --- mouse only -------------------------------------------------------- */
+// Controller presses leave this Mac as keystrokes. Any that land on this page
+// -- a stray one, or a real key -- activate whatever has focus, which is how
+// "Other ways to connect" kept springing open while riding. Nothing here takes
+// keyboard focus, so the panel answers to the mouse and nothing else. Text
+// fields, if any are ever added, keep their focus: only buttons are blanked.
+function mouseOnly(root) {
+  (root || document).querySelectorAll("button, summary").forEach((el) => {
+    el.tabIndex = -1;
+  });
+}
+document.addEventListener("click", (e) => {
+  const hit = e.target.closest("button, summary");
+  if (hit) hit.blur();
+});
+
+/* --- state ------------------------------------------------------------- */
+
+function apply(s) {
+  if (!s) return;
+  if (s.ok === false && s.error) addLog("error", s.error);
+  if (s.running === undefined && s.state === undefined) return;
+  state = { ...state, ...s };
+  if (state.selected_outputs) outputs = new Set(state.selected_outputs);
+
+  const running = !!state.running;
+  const st = state.state;
+  $("go").textContent = running ? "Stop" : "Start";
+  $("go").classList.toggle("go", !running);
+  $("scan").disabled = running;
+
+  $("dot").className = "dot " + (st === "connected" ? "on" : running ? "busy" : "off");
+  $("statustext").textContent = !running ? "Not running"
+    : st === "connected" ? (state.detail || "Connected")
+    : st === "scanning" ? "Looking for your controller"
+    : st === "connecting" ? "Connecting"
+    : st === "retrying" ? "Reconnecting" : "Starting";
+
+  if (state.battery != null) {
+    $("batt").textContent = state.battery + "%";
+    $("batt").hidden = false;
+  } else { $("batt").hidden = true; }
+
+  const sides = state.sides || [];
+  for (const side of ["left", "right"]) {
+    const d = sides.find((x) => (x.name || "").toLowerCase().includes(side));
+    $("dot-" + side).className = "dot " + (d && d.state === "connected" ? "on" : "off");
+  }
+  $("halfnote").hidden = !(running && sides.length &&
+    sides.filter((d) => d.state === "connected").length < 2);
+
+  renderDests(); renderPads(); renderEditor();
+}
+
+function addLog(level, message) {
+  const el = document.createElement("div");
+  el.className = level;
+  el.textContent = message;
+  const box = $("log");
+  const stuck = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  box.appendChild(el);
+  while (box.childElementCount > 400) box.removeChild(box.firstChild);
+  if (stuck) box.scrollTop = box.scrollHeight;
+}
+
+async function post(path, body) {
+  const r = await fetch(path, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  return r.json();
+}
+
+const events = new EventSource("/events");
+events.onmessage = (e) => {
+  const ev = JSON.parse(e.data);
+  if (ev.kind === "log") addLog(ev.level, ev.message);
+  else if (ev.kind === "state") apply(ev);
+  else if (ev.kind === "button") { state.held = ev.held; renderPads(); }
+};
+
+$("go").onclick = async () => {
+  $("go").disabled = true;
+  apply(await post(state.running ? "/api/stop" : "/api/start",
+                   state.running ? {} : { outputs: [...outputs] }));
+  $("go").disabled = false;
+};
+
+$("scan").onclick = async () => {
+  $("scan").disabled = true;
+  $("scan").textContent = "Scanning";
+  await post("/api/scan");
+  $("scan").textContent = "Scan for controller";
+  $("scan").disabled = !!state.running;
+};
+
+$("reset").onclick = async () => {
+  if (!confirm("Put every button back to its original setting?")) return;
+  selectedButton = null;
+  apply(await post("/api/reset"));
+};
+
+(async () => {
+  mouseOnly();
+  vocab = await (await fetch("/api/vocab")).json();
+  apply(await (await fetch("/api/state")).json());
+})();
+</script>
+</body>
+</html>

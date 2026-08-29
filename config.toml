@@ -1,0 +1,113 @@
+# zwiftbridge configuration
+
+[bridge]
+# Where button presses go. Combine freely.
+#   "zwift_dircon" -- emulates a Zwift Ride over DirCon, advertised exactly
+#                    like your KICKR does (0xFC82). MyWhoosh already knows how
+#                    to talk to a Zwift Ride, so nothing has to be taught.
+#                    START HERE.
+#   "obp_dircon"  -- OpenBikeProtocol tunnelled over DirCon, advertised as
+#                    _wahoo-fitness-tnp._tcp. Sniffing the iPad showed this is
+#                    what MyWhoosh actually browses for. THE ONE THAT WORKS.
+#   "obp_mdns"    -- same protocol, plain _openbikecontrol._tcp. MyWhoosh
+#                    queries this only incidentally; kept as a fallback.
+#   "whoosh_link" -- MyWhoosh Link, TCP 21587. Needs the MyWhoosh Link
+#                    companion app to have connected once, and MyWhoosh dials
+#                    us rather than the reverse -- it never engaged here.
+#   "keystrokes"  -- synthetic key events for MyWhoosh on this same Mac.
+#   "console"     -- print only; use while you are mapping buttons.
+# The panel's checkboxes override this per-session; this is the launch default.
+# Riding on the Mac? Use ["keystrokes"].
+outputs = ["zwift_dircon"]
+
+# The Zwift Ride is TWO BLE peripherals (left and right), each reporting only
+# its own buttons -- so this is a list of both. Run `main.py scan` to get them.
+# Leaving it empty scans on every launch, which is fine.
+addresses = []
+
+scan_timeout = 15.0
+reconnect = true
+
+# Buzz the controller itself when you press a button, so you feel the shift
+# land without looking down. The Ride and the Play have haptic motors; Click
+# and Click v2 do not and just ignore it.
+#   "all"   -- every bound button (unbound ones stay silent)
+#   "shift" -- gear changes only, which is what BikeControl does
+#   "off"
+vibrate = "all"
+# Buttons that never buzz, whatever `vibrate` says. The analog steering
+# paddles are held, not clicked, so a tick on every squeeze is just noise --
+# the d-pad arrows steer too and DO buzz, so this is per-button, not per-action.
+vibrate_except = ["paddle_l", "paddle_r"]
+# Raw duration byte the Ride takes, 1..127. 32 is the short tick the Zwift app
+# uses for a gear change; go higher for a longer buzz.
+vibrate_ms = 32
+
+[zwift_dircon]
+# 36866 is the DirCon port your KICKR uses; ours walks if busy and the real
+# port is advertised in the SRV record.
+port = 36866
+device_name = "Zwift Ride (zwiftbridge)"
+
+[obp_dircon]
+# Runs on the next port up if you enable it alongside zwift_dircon.
+port = 36876
+device_name = "zwiftbridge OBP"
+
+[obp_mdns]
+# Advertised over mDNS, so the port is discovered, not hardcoded by clients --
+# if 36867 is busy we walk upward and advertise whatever we bound.
+port = 36867
+# What MyWhoosh shows in its device list. Make it something you will
+# recognise -- this is the CONTROLLER (your Zwift Ride, bridged), not the
+# trainer. Your KICKR CORE still pairs to MyWhoosh separately as the power
+# source; don't name this after it or the two get confusing to tell apart.
+device_name = "Zwift Ride (zwiftbridge)"
+
+[whoosh_link]
+# Fixed contract -- MyWhoosh dials exactly this port. Do not change it.
+port = 21587
+
+[keystrokes]
+hold_ms = 40
+
+# Button -> action. Actions:
+#   shift_up  shift_down  steer_left  steer_right
+#   nav_up  nav_down  nav_left  nav_right
+#   select  back  menu  toggle_ui  minimal_ui  fullscreen
+#   emote:1..7  camera:1..N  uturn  tuck  none
+#
+# Actions available over MyWhoosh Link: shift_*, steer_*, emote, camera,
+# uturn, tuck. The nav/select/back/menu and UI-toggle ones are keystrokes-only.
+#
+# What MyWhoosh actually publishes a keyboard shortcut for is a short list:
+# shift_up (I), shift_down (K), steer_left (A/left), steer_right (D/right),
+# minimal_ui (U), toggle_ui (H, HD build only), emote:1..7 (1..7) and
+# fullscreen (ctrl+cmd+F). There is NO key for camera, uturn or tuck --
+# bind those only if you are running a network output.
+[buttons]
+# Left side is the natural way round. The RIGHT side is deliberately
+# inverted -- its up paddle shifts DOWN -- so the two halves are mirrored.
+# This is a keymap choice, not a protocol fact: the keystrokes output still
+# sends K for shift_up and I for shift_down, as MyWhoosh expects.
+shift_up_l = "shift_up"
+shift_dn_l = "shift_down"
+shift_up_r = "shift_down"
+shift_dn_r = "shift_up"
+
+paddle_l = "steer_left"
+paddle_r = "steer_right"
+left     = "steer_left"
+right    = "steer_right"
+up       = "nav_up"
+down     = "nav_down"
+
+a = "select"
+b = "back"
+y = "menu"
+z = "emote:1"
+
+onoff_l   = "toggle_ui"
+onoff_r   = "camera:1"
+powerup_l = "uturn"
+powerup_r = "tuck"

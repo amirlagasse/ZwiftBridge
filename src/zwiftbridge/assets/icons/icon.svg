@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#f26522"/>
+  <!-- the span it crosses: a deck on two piers, faint so 16px still reads -->
+  <g stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".45">
+    <path d="M8 48h48"/>
+    <path d="M19 48v8M45 48v8"/>
+  </g>
+  <!-- the crossing itself: a Z bolt -->
+  <path d="M39 5 L17 35h12L25 59 47 27H35z" fill="#fff"/>
+</svg>

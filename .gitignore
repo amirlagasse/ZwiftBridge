@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Whatever the control panel last saved -- per-machine state, not config.
+settings.json
+
+# BikeControl's repo, kept locally only to look up protocol details.
+references/
+
+# Notes for Claude Code -- local working context, not part of the project.
+CLAUDE.md
+.claude/
+
+# macOS
+.DS_Store
+*.log

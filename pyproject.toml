@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zwiftbridge"
+version = "1.0.0"
+description = "Zwift Ride controller to MyWhoosh -- no subscription, auto-connect on launch"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [{ name = "Amir Lagasse" }]
+keywords = ["zwift", "mywhoosh", "cycling", "bluetooth", "dircon"]
+
+dependencies = [
+  "bleak>=0.22",              # BLE, wraps CoreBluetooth on macOS
+  "zeroconf>=0.130",          # mDNS advertisement for the network outputs
+  "pyobjc-framework-Quartz>=10.0; sys_platform == 'darwin'",              # keystrokes: CGEvent
+  "pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'",               # keystrokes: what is frontmost
+  "pyobjc-framework-ApplicationServices>=10.0; sys_platform == 'darwin'", # keystrokes: permission check
+]
+
+[project.optional-dependencies]
+# The Mac app shell. Only zwiftbridge.app needs these; the CLI and the
+# browser panel do not.
+app = [
+  "pywebview>=5.0",
+  "pyobjc-framework-WebKit>=10.0; sys_platform == 'darwin'",
+]
+
+[project.scripts]
+zwiftbridge = "zwiftbridge.cli:main"
+zwiftbridge-app = "zwiftbridge.desktop:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+zwiftbridge = ["assets/ui.html", "assets/icons/*"]

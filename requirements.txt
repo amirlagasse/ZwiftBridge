@@ -1,0 +1,7 @@
+# Runtime dependencies. `pip install -e .` reads pyproject.toml instead and is
+# the better way in; this file stays for `pip install -r requirements.txt`.
+bleak>=0.22                                 # BLE, wraps CoreBluetooth on macOS
+zeroconf>=0.130                             # mDNS for the network outputs
+pyobjc-framework-Quartz>=10.0               # keystrokes output: CGEvent
+pyobjc-framework-Cocoa>=10.0                # keystrokes output: what is frontmost
+pyobjc-framework-ApplicationServices>=10.0  # keystrokes output: permission check
