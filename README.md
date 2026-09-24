@@ -25,6 +25,15 @@ are independent and nothing proxies your power data.
 
 **Windows**
 
+`setup.ps1` does all three steps (uv if installed, else pip; reuses an
+existing `.venv`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+By hand:
+
 ```powershell
 py -3 -m venv .venv
 .venv\Scripts\pip install -e .            # or: -r requirements.txt
