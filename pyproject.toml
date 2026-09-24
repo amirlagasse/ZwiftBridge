@@ -7,13 +7,15 @@ name = "zwiftbridge"
 version = "1.0.0"
 description = "Zwift Ride controller to MyWhoosh -- no subscription, auto-connect on launch"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Amir Lagasse" }]
 keywords = ["zwift", "mywhoosh", "cycling", "bluetooth", "dircon"]
 
+# Windows needs nothing extra: the keystrokes output drives SendInput through
+# ctypes, which is in the standard library.
 dependencies = [
-  "bleak>=0.22",              # BLE, wraps CoreBluetooth on macOS
+  "bleak>=0.22",              # BLE: CoreBluetooth on macOS, WinRT on Windows
   "zeroconf>=0.130",          # mDNS advertisement for the network outputs
   "pyobjc-framework-Quartz>=10.0; sys_platform == 'darwin'",              # keystrokes: CGEvent
   "pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'",               # keystrokes: what is frontmost
@@ -21,8 +23,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The Mac app shell. Only zwiftbridge.app needs these; the CLI and the
-# browser panel do not.
+# The desktop window shell -- zwiftbridge.app on macOS, the Start Menu
+# shortcut on Windows. The CLI and the browser panel need none of it.
+# pywebview renders through WebKit on macOS and Edge WebView2 on Windows.
 app = [
   "pywebview>=5.0",
   "pyobjc-framework-WebKit>=10.0; sys_platform == 'darwin'",

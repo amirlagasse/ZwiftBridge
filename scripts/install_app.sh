@@ -1,5 +1,6 @@
 #!/bin/sh
-# Builds /Applications/zwiftbridge.app, which runs launch.py out of THIS repo.
+# Builds /Applications/zwiftbridge.app, which runs THIS repo. macOS only --
+# the Windows equivalent is scripts/install_shortcut.ps1.
 #
 # The bundle is a launcher, not a copy: edit the code here and relaunch the app
 # to get the change. Re-run this script only if you move the repo.
@@ -10,7 +11,7 @@ APP="/Applications/zwiftbridge.app"
 
 if [ ! -x "$REPO/.venv/bin/python" ]; then
   echo "No .venv here. Create it first:"
-  echo "  python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+  echo "  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
   exit 1
 fi
 

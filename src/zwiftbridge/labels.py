@@ -12,6 +12,8 @@ place as the thing under your thumb.
 
 from __future__ import annotations
 
+import sys
+
 from . import actions as A
 
 # --- Buttons ---------------------------------------------------------------
@@ -85,7 +87,7 @@ ACTION_GROUPS = [
             {"id": A.MINIMAL_UI, "name": "Minimal display", "hint": "Hide most overlays"},
             {"id": A.TOGGLE_UI, "name": "Hide display", "hint": "MyWhoosh HD only"},
             {"id": A.CAMERA, "name": "Change camera", "hint": "Next view"},
-            {"id": A.FULLSCREEN, "name": "Fullscreen", "hint": "On this Mac"},
+            {"id": A.FULLSCREEN, "name": "Fullscreen", "hint": "On this computer"},
         ],
     },
     {
@@ -135,21 +137,35 @@ def action_name(spec: str | None) -> str:
 
 
 # --- Outputs ---------------------------------------------------------------
+#
+# The keystrokes route has a different way of failing silently on each
+# platform, and the hint is the only place the rider ever sees it.
+KEYSTROKE_CAVEAT = {
+    "darwin": " Needs Accessibility permission.",
+    "win32": " If MyWhoosh runs as administrator, start zwiftbridge the same way.",
+}.get(sys.platform, "")
+
+# The panel puts the recommended outputs up top and folds the rest away. Which
+# one deserves that depends on where the game is: on Windows MyWhoosh runs on
+# this same box, so keystrokes needs no network and no pairing at all. On macOS
+# the Wi-Fi route to a tablet is the one that was built for.
+KEYSTROKES_FIRST = sys.platform == "win32"
+
 
 OUTPUTS = [
     {
         "id": "zwift_dircon",
         "name": "Over Wi-Fi",
-        "hint": "MyWhoosh on an iPad or another computer. Pairs like a real "
+        "hint": "MyWhoosh on a tablet or another computer. Pairs like a real "
                 "Zwift Ride. Both devices must be on the same network.",
-        "recommended": True,
+        "recommended": not KEYSTROKES_FIRST,
     },
     {
         "id": "keystrokes",
-        "name": "On this Mac",
-        "hint": "Types into MyWhoosh running here. Needs Accessibility "
-                "permission, and MyWhoosh has to be the front window.",
-        "recommended": False,
+        "name": "On this computer",
+        "hint": "Types into MyWhoosh running here. MyWhoosh has to be the "
+                "front window." + KEYSTROKE_CAVEAT,
+        "recommended": KEYSTROKES_FIRST,
     },
     {
         "id": "obp_dircon",

@@ -5,7 +5,7 @@
 #   "zwift_dircon" -- emulates a Zwift Ride over DirCon, advertised exactly
 #                    like your KICKR does (0xFC82). MyWhoosh already knows how
 #                    to talk to a Zwift Ride, so nothing has to be taught.
-#                    START HERE.
+#                    START HERE if MyWhoosh is on another device.
 #   "obp_dircon"  -- OpenBikeProtocol tunnelled over DirCon, advertised as
 #                    _wahoo-fitness-tnp._tcp. Sniffing the iPad showed this is
 #                    what MyWhoosh actually browses for. THE ONE THAT WORKS.
@@ -14,14 +14,18 @@
 #   "whoosh_link" -- MyWhoosh Link, TCP 21587. Needs the MyWhoosh Link
 #                    companion app to have connected once, and MyWhoosh dials
 #                    us rather than the reverse -- it never engaged here.
-#   "keystrokes"  -- synthetic key events for MyWhoosh on this same Mac.
+#   "keystrokes"  -- synthetic key events for MyWhoosh on this same
+#                    computer. SendInput on Windows, CGEvent on macOS.
+#                    No network, no pairing. START HERE if you ride on
+#                    the machine MyWhoosh runs on.
 #   "console"     -- print only; use while you are mapping buttons.
-# The panel's checkboxes override this per-session; this is the launch default.
-# Riding on the Mac? Use ["keystrokes"].
-outputs = ["zwift_dircon"]
+# The panel's checkboxes override this per-session; this is the launch
+# default. MyWhoosh on a separate tablet? Use ["zwift_dircon"].
+outputs = ["keystrokes"]
 
 # The Zwift Ride is TWO BLE peripherals (left and right), each reporting only
-# its own buttons -- so this is a list of both. Run `main.py scan` to get them.
+# its own buttons -- so this is a list of both. Run `zwiftbridge scan` to get
+# them.
 # Leaving it empty scans on every launch, which is fine.
 addresses = []
 

@@ -14,8 +14,14 @@ references/
 
 # Notes for Claude Code -- local working context, not part of the project.
 CLAUDE.md
+LEDGER.md
 .claude/
 
 # macOS
 .DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
 *.log

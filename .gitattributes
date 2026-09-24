@@ -1,0 +1,11 @@
+# One checkout, two machines. Without this a file written on Windows picks up
+# CRLF, gets committed that way, and run.sh no longer runs on the Mac.
+* text=auto eol=lf
+
+# Except the ones Windows itself has to read.
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.ico binary

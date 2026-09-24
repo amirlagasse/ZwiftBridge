@@ -1,7 +1,7 @@
 """The semantic action vocabulary that sits between buttons and outputs.
 
 One keymap, many sinks: a binding names an action, and each output decides
-how to express it (a keystroke on the Mac, a JSON message to MyWhoosh on an
+how to express it (a keystroke on this computer, a JSON message to MyWhoosh on an
 iPad). Adding an output never means re-writing the keymap.
 """
 

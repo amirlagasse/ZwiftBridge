@@ -1,13 +1,17 @@
 """Draws zwiftbridge's icons -- no image library, no design tool.
 
-Two files come out of this, both from the same shapes:
+Three files come out of this, all from the same shapes:
 
   src/zwiftbridge/assets/icons/icon.png      full-bleed, the panel's favicon
-  src/zwiftbridge/assets/icons/icon_app.png  the Dock icon: an Apple-shaped
-      squircle inset in a transparent 1024 canvas, the way macOS expects one
+  src/zwiftbridge/assets/icons/icon_app.png  the macOS Dock icon: an Apple-
+      shaped squircle inset in a transparent 1024 canvas, the way macOS
+      expects one
+  src/zwiftbridge/assets/icons/icon.ico      the Windows shortcut icon, six
+      sizes in one file
 
-Run it after changing anything here, then re-run scripts/install_app.sh so
-the bundle picks up the new .icns.  Nothing else imports this file.
+Run it after changing anything here, then re-run scripts/install_app.sh (macOS)
+or scripts/install_shortcut.ps1 (Windows) so the launcher picks up the new
+artwork.  Nothing else imports this file.
 """
 
 from __future__ import annotations
@@ -112,6 +116,26 @@ def render(size: int, *, squircle: bool, inset: float, gradient: bool,
             + chunk(b"IEND", b""))
 
 
+def ico(sizes=(16, 32, 48, 64, 128, 256)) -> bytes:
+    """A Windows .ico holding one PNG per size.
+
+    ICO has carried PNG-compressed entries since Vista, so this reuses render()
+    rather than growing a second BMP encoder. A width byte of 0 means 256 --
+    the field is one byte, so that is how the format spells the largest size.
+    """
+    images = [render(n, squircle=False, inset=0.0, gradient=True, samples=2)
+              for n in sizes]
+    header = struct.pack("<HHH", 0, 1, len(images))
+    offset = len(header) + 16 * len(images)
+    entries, body = b"", b""
+    for size, png in zip(sizes, images):
+        entries += struct.pack("<BBBBHHII", size % 256, size % 256, 0, 0,
+                               1, 32, len(png), offset)
+        body += png
+        offset += len(png)
+    return header + entries + body
+
+
 if __name__ == "__main__":
     from pathlib import Path
 
@@ -127,3 +151,5 @@ if __name__ == "__main__":
         render(1024, squircle=True, inset=(1024 - 824) / 2 / 1024,
                gradient=True, samples=2))
     print("icon_app.png  1024px, squircle inset for the Dock")
+    (icons / "icon.ico").write_bytes(ico())
+    print("icon.ico      16/32/48/64/128/256px, for the Windows shortcut")

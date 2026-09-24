@@ -318,6 +318,12 @@ function renderDests() {
     box.innerHTML = `<div class="warnbox"><b>One more step.</b> Open System Settings,
       go to Privacy and Security, then Accessibility, and switch on the app you
       started this from. Then quit and reopen zwiftbridge.</div>`;
+  } else if (waiting.name === "keystrokes") {
+    // Windows has no Accessibility switch, so the blocker there is whatever
+    // the output itself says -- usually MyWhoosh running elevated. Show it
+    // rather than dropping to a blank box the rider cannot act on.
+    box.innerHTML = `<div class="warnbox"><b>Keystrokes are not going out.</b>
+      ${waiting.status || "the keystrokes route is not ready"}</div>`;
   } else if (waiting.name.indexOf("dircon") >= 0 || waiting.name === "obp_mdns") {
     box.innerHTML = `<div class="warnbox"><b>Now pair it in MyWhoosh.</b> Same Wi-Fi,
       turn Virtual Shifting on, pair your trainer as usual, then look for
@@ -423,7 +429,7 @@ function renderEditor() {
 }
 
 /* --- mouse only -------------------------------------------------------- */
-// Controller presses leave this Mac as keystrokes. Any that land on this page
+// Controller presses leave this computer as keystrokes. Any that land on this page
 // -- a stray one, or a real key -- activate whatever has focus, which is how
 // "Other ways to connect" kept springing open while riding. Nothing here takes
 // keyboard focus, so the panel answers to the mouse and nothing else. Text

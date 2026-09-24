@@ -26,15 +26,28 @@ def _setup_logging(verbose: bool) -> None:
 
 
 def _lan_ip() -> str:
-    """Best-guess LAN address to show the user for the iPad setup."""
+    """Best-guess LAN address to show the user for the tablet setup."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.connect(("192.168.1.1", 1))
         return sock.getsockname()[0]
     except OSError:
-        return "your Mac's Wi-Fi IP"
+        return "this computer's Wi-Fi IP"
     finally:
         sock.close()
+
+
+def _stop_hint(port: int) -> str:
+    """How to find and stop the instance already holding the panel's port.
+
+    By port, not by process name: a stale zwiftbridge started from a terminal
+    that has since closed will not match a name search, but it is still sitting
+    on the socket answering with old code.
+    """
+    if sys.platform == "win32":
+        return ("powershell \"Get-NetTCPConnection -LocalPort %d -State Listen | "
+                "Stop-Process -Id { $_.OwningProcess } -Force\"" % port)
+    return "kill $(lsof -nP -iTCP:%d -sTCP:LISTEN -t)" % port
 
 
 # --- step 1: scan ----------------------------------------------------------
@@ -132,8 +145,8 @@ async def cmd_run(args) -> int:
     if any(o.startswith(("zwift_dircon", "obp_")) for o in cfg.outputs):
         print()
         print(f"  Advertising 'zwiftbridge' on {_lan_ip()} over Wi-Fi.")
-        print("  On the device running MyWhoosh (iPad or this Mac):")
-        print("    1. same Wi-Fi network as this Mac")
+        print("  On the device running MyWhoosh (a tablet, or this computer):")
+        print("    1. same Wi-Fi network as this computer")
         print("    2. MyWhoosh > settings > enable Virtual Shifting")
         print("    3. pair your trainer as usual, then scan for controllers")
         name = cfg.output_settings.get("zwift_dircon", {}).get(
@@ -167,11 +180,29 @@ async def cmd_ui(args) -> int:
     # does not, because the loop is already tearing down by then.
     stopping = asyncio.Event()
     loop = asyncio.get_running_loop()
+    installed = False
     for signal_name in ("SIGINT", "SIGTERM"):
         try:
             loop.add_signal_handler(getattr(signal, signal_name), stopping.set)
+            installed = True
         except (NotImplementedError, AttributeError):
             pass
+    if not installed:
+        # Windows: the proactor loop has no add_signal_handler at all. Without
+        # this fallback Ctrl-C unwinds as KeyboardInterrupt and the mDNS
+        # advertisement is never withdrawn, leaving a dead "zwiftbridge" in
+        # MyWhoosh's list. call_soon_threadsafe because the C handler runs on
+        # its own thread.
+        def _on_signal(_sig, _frame):
+            loop.call_soon_threadsafe(stopping.set)
+
+        for signal_name in ("SIGINT", "SIGBREAK", "SIGTERM"):
+            handler = getattr(signal, signal_name, None)
+            if handler is not None:
+                try:
+                    signal.signal(handler, _on_signal)
+                except (ValueError, OSError):
+                    pass
 
     try:
         serving = asyncio.create_task(server.serve())
@@ -193,7 +224,7 @@ async def cmd_ui(args) -> int:
         print("  zwiftbridge is probably already running. Either open")
         print(f"  {url} -- it may be the panel you want --")
         print("  or stop the old one and try again:\n")
-        print("      pkill -f 'main.py ui'\n")
+        print(f"      {_stop_hint(args.port)}\n")
         return 1
     return 0
 

@@ -620,8 +620,11 @@ async def main() -> None:
                  for k in [_split_key(spec)[1]] if k not in KEYCODES), [])
     check("emotes 1-7 all have keycodes",
           [str(n) for n in range(1, 8) if str(n) not in KEYCODES], [])
-    check("fullscreen carries its modifiers",
-          _split_key(ACTION_KEYS["fullscreen"]), (["ctrl", "cmd"], "f"))
+    # Fullscreen is the one binding that differs by platform: MyWhoosh uses
+    # ctrl+cmd+F on macOS and F11 on Windows.
+    check("fullscreen is right for this platform",
+          _split_key(ACTION_KEYS["fullscreen"]),
+          ([], "f11") if sys.platform == "win32" else (["ctrl", "cmd"], "f"))
 
     keys = KeystrokeOutput()
     await keys.start()

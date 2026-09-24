@@ -1,7 +1,10 @@
 # Runtime dependencies. `pip install -e .` reads pyproject.toml instead and is
 # the better way in; this file stays for `pip install -r requirements.txt`.
-bleak>=0.22                                 # BLE, wraps CoreBluetooth on macOS
+#
+# The pyobjc lines are macOS-only and pip skips them on Windows. Windows needs
+# nothing extra -- the keystrokes output uses ctypes from the standard library.
+bleak>=0.22                                 # BLE: CoreBluetooth / WinRT
 zeroconf>=0.130                             # mDNS for the network outputs
-pyobjc-framework-Quartz>=10.0               # keystrokes output: CGEvent
-pyobjc-framework-Cocoa>=10.0                # keystrokes output: what is frontmost
-pyobjc-framework-ApplicationServices>=10.0  # keystrokes output: permission check
+pyobjc-framework-Quartz>=10.0; sys_platform == 'darwin'               # keystrokes: CGEvent
+pyobjc-framework-Cocoa>=10.0; sys_platform == 'darwin'                # keystrokes: what is frontmost
+pyobjc-framework-ApplicationServices>=10.0; sys_platform == 'darwin'  # keystrokes: permission check
